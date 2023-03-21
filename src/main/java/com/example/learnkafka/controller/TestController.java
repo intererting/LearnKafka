@@ -4,6 +4,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.core.RoutingKafkaTemplate;
 import org.springframework.kafka.support.ProducerListener;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,26 +20,31 @@ import org.springframework.web.bind.annotation.RestController;
 public class TestController {
 
     @Autowired
-    private KafkaTemplate<String, String> kafkaTemplate;
+    private KafkaTemplate<Object, Object> kafkaTemplate;
+
+    @Autowired
+    private RoutingKafkaTemplate routingTemplate;
 
     @GetMapping("/test")
     public void test() {
         kafkaTemplate.setProducerListener(new ProducerListener<>() {
             @Override
-            public void onSuccess(ProducerRecord<String, String> producerRecord, RecordMetadata recordMetadata) {
+            public void onSuccess(ProducerRecord<Object, Object> producerRecord, RecordMetadata recordMetadata) {
                 System.out.println("send success");
                 System.out.println(producerRecord.topic());
                 System.out.println(recordMetadata.partition());
             }
 
             @Override
-            public void onError(ProducerRecord<String, String> producerRecord, RecordMetadata recordMetadata, Exception exception) {
+            public void onError(ProducerRecord<Object, Object> producerRecord, RecordMetadata recordMetadata, Exception exception) {
                 System.out.println("send error");
                 System.out.println(producerRecord.topic());
                 System.out.println(recordMetadata.partition());
             }
         });
-        kafkaTemplate.send("topic_demo", "hello kafka");
+        //        kafkaTemplate.send("topic_demo", "hello kafka");
+        //        routingTemplate.send("topic_demo", "two");
+        routingTemplate.send("router", new byte[]{1, 2, 3});
     }
 
 }

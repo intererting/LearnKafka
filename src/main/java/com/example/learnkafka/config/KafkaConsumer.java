@@ -4,6 +4,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.KafkaListener;
 
+import java.util.Arrays;
+
 /**
  * author        yiliyang
  * date          2023-03-20
@@ -14,8 +16,14 @@ import org.springframework.kafka.annotation.KafkaListener;
 @Configuration
 public class KafkaConsumer {
 
-    @KafkaListener(topics = {"topic_demo"}, groupId = "test_consumer_group", containerFactory = "kafkaListenerContainerFactory")
-    public void kafkaListener(ConsumerRecord<String, String> message) {
+    @KafkaListener(topics = {"topic_demo"}, groupId = "topic_demo_group", containerFactory = "kafkaListenerContainerFactory")
+    public void topicDemokafkaListener(ConsumerRecord<String, Object> message) {
         System.out.println("receive " + message);
     }
+
+    @KafkaListener(topics = {"router"}, groupId = "router_group", containerFactory = "routeKafkaListenerContainerFactory")
+    public void routerKafkaListener(ConsumerRecord<String, Object> message) {
+        System.out.println(message.value());
+    }
+
 }
