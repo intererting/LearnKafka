@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.KafkaListener;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * author        yiliyang
@@ -16,14 +17,22 @@ import java.util.Arrays;
 @Configuration
 public class KafkaConsumer {
 
-    @KafkaListener(topics = {"topic_demo"}, groupId = "topic_demo_group", containerFactory = "kafkaListenerContainerFactory")
+    /**
+     * concurrency==分区数,那么刚好一个线程消费一个,大于了浪费
+     */
+    @KafkaListener(topics = {"topic_demo"}, groupId = "topic_demo_group", concurrency = "2", containerFactory = "kafkaListenerContainerFactory")
     public void topicDemokafkaListener(ConsumerRecord<String, Object> message) {
-        System.out.println("receive " + message);
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        System.out.println("receive " + Thread.currentThread());
     }
 
     @KafkaListener(topics = {"router"}, groupId = "router_group", containerFactory = "routeKafkaListenerContainerFactory")
     public void routerKafkaListener(ConsumerRecord<String, Object> message) {
-        System.out.println(message.value());
+        System.out.println("router " + Arrays.toString((byte[]) message.value()));
     }
 
 }

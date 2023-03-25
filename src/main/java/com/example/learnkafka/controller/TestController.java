@@ -31,20 +31,20 @@ public class TestController {
             @Override
             public void onSuccess(ProducerRecord<Object, Object> producerRecord, RecordMetadata recordMetadata) {
                 System.out.println("send success");
-                System.out.println(producerRecord.topic());
                 System.out.println(recordMetadata.partition());
             }
 
             @Override
             public void onError(ProducerRecord<Object, Object> producerRecord, RecordMetadata recordMetadata, Exception exception) {
                 System.out.println("send error");
-                System.out.println(producerRecord.topic());
                 System.out.println(recordMetadata.partition());
             }
         });
-        //        kafkaTemplate.send("topic_demo", "hello kafka");
-        //        routingTemplate.send("topic_demo", "two");
-        routingTemplate.send("router", new byte[]{1, 2, 3});
+        for (int i = 0; i < 20; i++) {
+            kafkaTemplate.send("topic_demo", "hello kafka " + i);
+        }
+        //                routingTemplate.send("topic_demo", "two");
+        //        routingTemplate.send("router", new byte[]{1, 2, 3});
     }
 
 }

@@ -37,7 +37,8 @@ public class KafkaConfig {
      */
     @Bean
     public KafkaAdmin.NewTopics newTopics() {
-        return new KafkaAdmin.NewTopics(TopicBuilder.name("topic_demo")
+        return new KafkaAdmin.NewTopics(TopicBuilder.name("topic_demo").partitions(2)
+//                                                .replicas(1)
                                                 .config(TopicConfig.MESSAGE_TIMESTAMP_TYPE_CONFIG, TimestampType.LOG_APPEND_TIME.name)
                                                 .build());
     }
@@ -45,6 +46,7 @@ public class KafkaConfig {
     @Bean
     public ProducerFactory<Object, Object> producerFactory() {
         var factory = new DefaultKafkaProducerFactory<>(producerConfigs());
+        factory.setProducerPerThread(true);
         factory.addListener(new ProducerFactory.Listener<>() {
             @Override
             public void producerAdded(String id, Producer<Object, Object> producer) {
@@ -61,7 +63,8 @@ public class KafkaConfig {
 
     @Bean
     public ConsumerFactory<String, Object> consumerFactory() {
-        return new DefaultKafkaConsumerFactory<>(consumerConfigs());
+        ConsumerFactory<String, Object> consumerFactory = new DefaultKafkaConsumerFactory<>(consumerConfigs());
+        return consumerFactory;
     }
 
     @Bean
@@ -87,6 +90,7 @@ public class KafkaConfig {
     @Bean
     public Map<String, Object> producerConfigs() {
         Map<String, Object> props = new HashMap<>();
+        props.put(ProducerConfig.PARTITIONER_CLASS_CONFIG, "com.example.learnkafka.config.MyPartitioner");
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "producer-yu");
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -98,6 +102,8 @@ public class KafkaConfig {
     public Map<String, Object> consumerConfigs() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.CLIENT_ID_CONFIG, "consumer-yu");
+        props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 10);
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
