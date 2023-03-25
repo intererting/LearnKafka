@@ -1,11 +1,16 @@
 package com.example.learnkafka.controller;
 
+import com.example.learnkafka.config.MessaegModel;
+import jakarta.annotation.Resource;
+import jakarta.annotation.Resources;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.core.KafkaOperations;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.RoutingKafkaTemplate;
 import org.springframework.kafka.support.ProducerListener;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -19,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class TestController {
 
-    @Autowired
+    @Resource(name = "kafkaTemplate")
     private KafkaTemplate<Object, Object> kafkaTemplate;
 
     @Autowired
@@ -40,11 +45,20 @@ public class TestController {
                 System.out.println(recordMetadata.partition());
             }
         });
+
+        //        kafkaTemplate.executeInTransaction(operations -> {
+        //            operations.send("topic_demo", "first");
+        //            //            int a = 1 / 0;
+        //            operations.send("topic_demo", "second");
+        //            return true;
+        //        });
+
+        //        kafkaTemplate.send("topic_demo", "hello world");
+
         for (int i = 0; i < 20; i++) {
             kafkaTemplate.send("topic_demo", "hello kafka " + i);
         }
         //                routingTemplate.send("topic_demo", "two");
         //        routingTemplate.send("router", new byte[]{1, 2, 3});
     }
-
 }

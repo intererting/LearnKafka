@@ -1,6 +1,8 @@
 package com.example.learnkafka.config;
 
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.config.TopicConfig;
@@ -16,7 +18,10 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.config.KafkaListenerContainerFactory;
 import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.*;
-import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
+import org.springframework.kafka.listener.*;
+import org.springframework.kafka.support.Acknowledgment;
+import org.springframework.kafka.transaction.KafkaAwareTransactionManager;
+import org.springframework.kafka.transaction.KafkaTransactionManager;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -38,14 +43,15 @@ public class KafkaConfig {
     @Bean
     public KafkaAdmin.NewTopics newTopics() {
         return new KafkaAdmin.NewTopics(TopicBuilder.name("topic_demo").partitions(2)
-//                                                .replicas(1)
+                                                //                                                .replicas(1)
                                                 .config(TopicConfig.MESSAGE_TIMESTAMP_TYPE_CONFIG, TimestampType.LOG_APPEND_TIME.name)
                                                 .build());
     }
 
     @Bean
-    public ProducerFactory<Object, Object> producerFactory() {
-        var factory = new DefaultKafkaProducerFactory<>(producerConfigs());
+    public ProducerFactory<Object, Object> producerFactory(SomeBean someBean) {
+        var factory = new DefaultKafkaProducerFactory<>(producerConfigs(someBean));
+        //        factory.setTransactionIdPrefix("t_yu");
         factory.setProducerPerThread(true);
         factory.addListener(new ProducerFactory.Listener<>() {
             @Override
@@ -61,9 +67,14 @@ public class KafkaConfig {
         return factory;
     }
 
+    //    @Bean(name = "ktm")
+    //    public KafkaTransactionManager<Object, Object> kafkaTransactionManager() {
+    //        return new KafkaTransactionManager<>(producerFactory());
+    //    }
+
     @Bean
-    public ConsumerFactory<String, Object> consumerFactory() {
-        ConsumerFactory<String, Object> consumerFactory = new DefaultKafkaConsumerFactory<>(consumerConfigs());
+    public ConsumerFactory<String, Object> consumerFactory(SomeBean someBean) {
+        ConsumerFactory<String, Object> consumerFactory = new DefaultKafkaConsumerFactory<>(consumerConfigs(someBean));
         return consumerFactory;
     }
 
@@ -73,10 +84,21 @@ public class KafkaConfig {
     }
 
     @Bean(name = "kafkaListenerContainerFactory")
-    public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, Object>> kafkaListenerContainerFactory() {
+    public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, Object>> kafkaListenerContainerFactory(SomeBean someBean) {
         ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory());
+        factory.setConsumerFactory(consumerFactory(someBean));
+        factory.setBatchListener(true);
+        //设置手动提交ackMode
+        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.BATCH);
         return factory;
+    }
+
+    @Bean
+    public KafkaListenerErrorHandler validationErrorHandler() {
+        return (m, e) -> {
+            System.out.println("catch error " + e);
+            return "default";
+        };
     }
 
     @Bean(name = "routeKafkaListenerContainerFactory")
@@ -86,12 +108,13 @@ public class KafkaConfig {
         return factory;
     }
 
-
     @Bean
-    public Map<String, Object> producerConfigs() {
+    public Map<String, Object> producerConfigs(SomeBean someBean) {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.PARTITIONER_CLASS_CONFIG, "com.example.learnkafka.config.MyPartitioner");
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "producer-yu");
+        props.put("some.bean", someBean);
+        props.put(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, MyProducerInterceptor.class.getName());
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -99,10 +122,12 @@ public class KafkaConfig {
     }
 
     @Bean
-    public Map<String, Object> consumerConfigs() {
+    public Map<String, Object> consumerConfigs(SomeBean someBean) {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.CLIENT_ID_CONFIG, "consumer-yu");
         props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 10);
+        props.put("some.bean", someBean);
+        props.put(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, MyConsumerInterceptor.class.getName());
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
@@ -121,8 +146,8 @@ public class KafkaConfig {
     }
 
     @Bean
-    public KafkaTemplate<Object, Object> kafkaTemplate() {
-        return new KafkaTemplate<>(producerFactory());
+    public KafkaTemplate<Object, Object> kafkaTemplate(SomeBean someBean) {
+        return new KafkaTemplate<>(producerFactory(someBean));
     }
 
     @Bean
