@@ -7,6 +7,9 @@ import org.springframework.context.event.EventListener;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.event.ListenerContainerIdleEvent;
 import org.springframework.kafka.support.Acknowledgment;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.kafka.support.converter.ConversionException;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,19 +39,36 @@ public class KafkaConsumer {
     //        }
     //        System.out.println("receive " + Thread.currentThread());
     //    }
-    @KafkaListener(topics = {"topic_demo"}, groupId = "topic_demo_group", concurrency = "2",//
+    @KafkaListener(topics = {"topic_demo_d"}, groupId = "topic_demo_group_d", concurrency = "2",//
             id = "my_id_1", properties = {"auto.offset.reset=latest"}, containerFactory = "kafkaListenerContainerFactory", errorHandler = "validationErrorHandler")
     //    @Transactional("ktm")
     public void topicDemokafkaListenerA(@Payload @Valid List<MessaegModel> messaegModel) {
         System.out.println("receive " + Thread.currentThread() + "  " + messaegModel.size() + " " + messaegModel);
     }
-//如果有两个@KafkaListenre,consumer id会冲突
-//    @KafkaListener(topics = {"topic_demo"}, groupId = "topic_demo_group", concurrency = "2",//
-//            id = "my_id_2", properties = {"auto.offset.reset=latest"}, containerFactory = "kafkaListenerContainerFactory", errorHandler = "validationErrorHandler")
-//    //    @Transactional("ktm")
-//    public void topicDemokafkaListenerB(@Payload @Valid List<MessaegModel> messaegModel) {
-//        System.out.println("receive " + Thread.currentThread() + "  " + messaegModel.size() + " " + messaegModel);
-//    }
+    //如果有两个@KafkaListenre,consumer id会冲突
+    //    @KafkaListener(topics = {"topic_demo"}, groupId = "topic_demo_group", concurrency = "2",//
+    //            id = "my_id_2", properties = {"auto.offset.reset=latest"}, containerFactory = "kafkaListenerContainerFactory", errorHandler = "validationErrorHandler")
+    //    //    @Transactional("ktm")
+    //    public void topicDemokafkaListenerB(@Payload @Valid List<MessaegModel> messaegModel) {
+    //        System.out.println("receive " + Thread.currentThread() + "  " + messaegModel.size() + " " + messaegModel);
+    //    }
+
+    @KafkaListener(topics = {"topic_demo"}, groupId = "topic_demo_group", concurrency = "2",//
+            id = "my_id_3", properties = {"auto.offset.reset=latest"}, containerFactory = "mKafkaListenerContainerFactory")
+    //    @Transactional("ktm")
+    public void topicDemokafkaListenerC(List<JsonMessage> messaegModel, @Header(KafkaHeaders.CONVERSION_FAILURES) List<ConversionException> exceptions) {
+        //        System.out.println("exceptions " + exceptions.size());
+        //        System.out.println("receive " + Thread.currentThread() + "  " + messaegModel.size() + " " + messaegModel);
+        throw new RuntimeException("消费异常");
+    }
+
+    @KafkaListener(topics = {"topic_demo.DLT"}, groupId = "topic_demo_group_dlt", concurrency = "1",//
+            id = "my_id_4", properties = {"auto.offset.reset=latest"}, containerFactory = "mKafkaListenerContainerFactory", errorHandler = "validationErrorHandler")
+    //    @Transactional("ktm")
+    public void topicDemokafkaListenerC(List<JsonMessage> messaegModel) {
+        System.out.println("DLT " + messaegModel);
+        System.out.println("receive " + Thread.currentThread() + " " + messaegModel);
+    }
 
     @EventListener(condition = "event.listenerId.startsWith('my_')")
     public void eventHandler(ListenerContainerIdleEvent event) {

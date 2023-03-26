@@ -1,5 +1,6 @@
 package com.example.learnkafka.controller;
 
+import com.example.learnkafka.config.JsonMessage;
 import com.example.learnkafka.config.MessaegModel;
 import jakarta.annotation.Resource;
 import jakarta.annotation.Resources;
@@ -55,9 +56,11 @@ public class TestController {
 
         //        kafkaTemplate.send("topic_demo", "hello world");
 
-        for (int i = 0; i < 20; i++) {
-            kafkaTemplate.send("topic_demo", "hello kafka " + i);
-        }
+        //        for (int i = 0; i < 20; i++) {
+        //            kafkaTemplate.send("topic_demo", "hello kafka " + i);
+        //        }
+
+        kafkaTemplate.send("topic_demo", new JsonMessage("yuliyang", 11));
 
         //测试一个线程一个生产者
         //        new Thread(() -> {
