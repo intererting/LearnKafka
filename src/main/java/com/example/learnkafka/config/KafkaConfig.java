@@ -42,8 +42,10 @@ public class KafkaConfig {
      */
     @Bean
     public KafkaAdmin.NewTopics newTopics() {
+        //当partitions大于1,才能多线程消费
         return new KafkaAdmin.NewTopics(TopicBuilder.name("topic_demo").partitions(2)
                                                 //                                                .replicas(1)
+                                                //消息时间由服务端生成
                                                 .config(TopicConfig.MESSAGE_TIMESTAMP_TYPE_CONFIG, TimestampType.LOG_APPEND_TIME.name)
                                                 .build());
     }
@@ -51,11 +53,15 @@ public class KafkaConfig {
     @Bean
     public ProducerFactory<Object, Object> producerFactory(SomeBean someBean) {
         var factory = new DefaultKafkaProducerFactory<>(producerConfigs(someBean));
+        //开启事务
         //        factory.setTransactionIdPrefix("t_yu");
+
+        //默认情况系一个factory对应一个producer,如果这个设置打开,就会存在ThreadLocal中,那么一个线程就有一个producer
         factory.setProducerPerThread(true);
         factory.addListener(new ProducerFactory.Listener<>() {
             @Override
             public void producerAdded(String id, Producer<Object, Object> producer) {
+                //监听producer生成
                 System.out.println("producerAdded " + id);
             }
 
@@ -75,6 +81,14 @@ public class KafkaConfig {
     @Bean
     public ConsumerFactory<String, Object> consumerFactory(SomeBean someBean) {
         ConsumerFactory<String, Object> consumerFactory = new DefaultKafkaConsumerFactory<>(consumerConfigs(someBean));
+        consumerFactory.addListener(new ConsumerFactory.Listener<>() {
+
+            @Override
+            public void consumerAdded(String id, Consumer<String, Object> consumer) {
+                //                ConsumerFactory.Listener.super.consumerAdded(id, consumer);
+                System.out.println("consumer add " + id);
+            }
+        });
         return consumerFactory;
     }
 
@@ -87,12 +101,16 @@ public class KafkaConfig {
     public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, Object>> kafkaListenerContainerFactory(SomeBean someBean) {
         ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory(someBean));
+        //这个为true,那么consumer的消息就不会一个一个的回调,可以用一个List来接收Message
         factory.setBatchListener(true);
-        //设置手动提交ackMode
+        //设置提交ackMode
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.BATCH);
         return factory;
     }
 
+    /**
+     * Validation验证失败回调
+     */
     @Bean
     public KafkaListenerErrorHandler validationErrorHandler() {
         return (m, e) -> {
@@ -111,9 +129,12 @@ public class KafkaConfig {
     @Bean
     public Map<String, Object> producerConfigs(SomeBean someBean) {
         Map<String, Object> props = new HashMap<>();
+        //自定义Partition选择器
         props.put(ProducerConfig.PARTITIONER_CLASS_CONFIG, "com.example.learnkafka.config.MyPartitioner");
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "producer-yu");
+        //注入bean,可以在拦截器使用
         props.put("some.bean", someBean);
+        //拦截器
         props.put(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, MyProducerInterceptor.class.getName());
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -125,9 +146,11 @@ public class KafkaConfig {
     public Map<String, Object> consumerConfigs(SomeBean someBean) {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.CLIENT_ID_CONFIG, "consumer-yu");
-        props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 10);
+        //每次拉取消息数
+        props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 100);
         props.put("some.bean", someBean);
         props.put(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, MyConsumerInterceptor.class.getName());
+        //关闭自动提交offset
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);

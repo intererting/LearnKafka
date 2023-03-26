@@ -37,11 +37,18 @@ public class KafkaConsumer {
     //        System.out.println("receive " + Thread.currentThread());
     //    }
     @KafkaListener(topics = {"topic_demo"}, groupId = "topic_demo_group", concurrency = "2",//
-            id = "my_id", properties = {"auto.offset.reset=latest"}, containerFactory = "kafkaListenerContainerFactory", errorHandler = "validationErrorHandler")
-//    @Transactional("ktm")
-    public void topicDemokafkaListener(@Payload @Valid List<MessaegModel> messaegModel) {
+            id = "my_id_1", properties = {"auto.offset.reset=latest"}, containerFactory = "kafkaListenerContainerFactory", errorHandler = "validationErrorHandler")
+    //    @Transactional("ktm")
+    public void topicDemokafkaListenerA(@Payload @Valid List<MessaegModel> messaegModel) {
         System.out.println("receive " + Thread.currentThread() + "  " + messaegModel.size() + " " + messaegModel);
     }
+//如果有两个@KafkaListenre,consumer id会冲突
+//    @KafkaListener(topics = {"topic_demo"}, groupId = "topic_demo_group", concurrency = "2",//
+//            id = "my_id_2", properties = {"auto.offset.reset=latest"}, containerFactory = "kafkaListenerContainerFactory", errorHandler = "validationErrorHandler")
+//    //    @Transactional("ktm")
+//    public void topicDemokafkaListenerB(@Payload @Valid List<MessaegModel> messaegModel) {
+//        System.out.println("receive " + Thread.currentThread() + "  " + messaegModel.size() + " " + messaegModel);
+//    }
 
     @EventListener(condition = "event.listenerId.startsWith('my_')")
     public void eventHandler(ListenerContainerIdleEvent event) {

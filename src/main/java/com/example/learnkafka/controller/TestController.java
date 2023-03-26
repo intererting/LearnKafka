@@ -58,6 +58,13 @@ public class TestController {
         for (int i = 0; i < 20; i++) {
             kafkaTemplate.send("topic_demo", "hello kafka " + i);
         }
+
+        //测试一个线程一个生产者
+        //        new Thread(() -> {
+        //            for (int i = 0; i < 20; i++) {
+        //                kafkaTemplate.send("topic_demo", "hello kafka " + System.currentTimeMillis());
+        //            }
+        //        }).start();
         //                routingTemplate.send("topic_demo", "two");
         //        routingTemplate.send("router", new byte[]{1, 2, 3});
     }
