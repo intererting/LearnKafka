@@ -56,11 +56,16 @@ public class TestController {
 
         //        kafkaTemplate.send("topic_demo", "hello world");
 
-        //        for (int i = 0; i < 20; i++) {
-        //            kafkaTemplate.send("topic_demo", "hello kafka " + i);
-        //        }
+                for (int i = 0; i < 20; i++) {
+                    try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    kafkaTemplate.send("topic_demo", "hello kafka " + i);
+                }
 
-        kafkaTemplate.send("topic_demo", new JsonMessage("yuliyang", 11));
+//        kafkaTemplate.send("topic_demo", new JsonMessage("yuliyang", 11));
 
         //测试一个线程一个生产者
         //        new Thread(() -> {

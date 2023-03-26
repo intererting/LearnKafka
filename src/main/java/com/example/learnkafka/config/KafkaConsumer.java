@@ -5,12 +5,14 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.annotation.RetryableTopic;
 import org.springframework.kafka.event.ListenerContainerIdleEvent;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.kafka.support.converter.ConversionException;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.retry.annotation.Backoff;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
@@ -39,23 +41,29 @@ public class KafkaConsumer {
     //        }
     //        System.out.println("receive " + Thread.currentThread());
     //    }
-    @KafkaListener(topics = {"topic_demo_d"}, groupId = "topic_demo_group_d", concurrency = "2",//
-            id = "my_id_1", properties = {"auto.offset.reset=latest"}, containerFactory = "kafkaListenerContainerFactory", errorHandler = "validationErrorHandler")
+    @KafkaListener(topics = {"topic_demo"}, groupId = "topic_demo_group", concurrency = "2",//
+            id = "my_id_1", properties = {"auto.offset.reset=latest"}, containerFactory = "mKafkaListenerContainerFactory", errorHandler = "validationErrorHandler")
     //    @Transactional("ktm")
     public void topicDemokafkaListenerA(@Payload @Valid List<MessaegModel> messaegModel) {
         System.out.println("receive " + Thread.currentThread() + "  " + messaegModel.size() + " " + messaegModel);
     }
-    //如果有两个@KafkaListenre,consumer id会冲突
-    //    @KafkaListener(topics = {"topic_demo"}, groupId = "topic_demo_group", concurrency = "2",//
-    //            id = "my_id_2", properties = {"auto.offset.reset=latest"}, containerFactory = "kafkaListenerContainerFactory", errorHandler = "validationErrorHandler")
-    //    //    @Transactional("ktm")
-    //    public void topicDemokafkaListenerB(@Payload @Valid List<MessaegModel> messaegModel) {
-    //        System.out.println("receive " + Thread.currentThread() + "  " + messaegModel.size() + " " + messaegModel);
-    //    }
 
     @KafkaListener(topics = {"topic_demo"}, groupId = "topic_demo_group", concurrency = "2",//
+            id = "my_id_2", properties = {"auto.offset.reset=latest"}, containerFactory = "mKafkaListenerContainerFactory", errorHandler = "validationErrorHandler")
+    //    @Transactional("ktm")
+    public void topicDemokafkaListenerB(@Payload @Valid List<MessaegModel> messaegModel) {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        System.out.println("receive " + Thread.currentThread() + "  " + messaegModel.size() + " " + messaegModel);
+    }
+
+   /* @KafkaListener(topics = {"topic_demo"}, groupId = "topic_demo_group", concurrency = "2",//
             id = "my_id_3", properties = {"auto.offset.reset=latest"}, containerFactory = "mKafkaListenerContainerFactory")
     //    @Transactional("ktm")
+//    @RetryableTopic
     public void topicDemokafkaListenerC(List<JsonMessage> messaegModel, @Header(KafkaHeaders.CONVERSION_FAILURES) List<ConversionException> exceptions) {
         //        System.out.println("exceptions " + exceptions.size());
         //        System.out.println("receive " + Thread.currentThread() + "  " + messaegModel.size() + " " + messaegModel);
@@ -68,7 +76,7 @@ public class KafkaConsumer {
     public void topicDemokafkaListenerC(List<JsonMessage> messaegModel) {
         System.out.println("DLT " + messaegModel);
         System.out.println("receive " + Thread.currentThread() + " " + messaegModel);
-    }
+    }*/
 
     @EventListener(condition = "event.listenerId.startsWith('my_')")
     public void eventHandler(ListenerContainerIdleEvent event) {

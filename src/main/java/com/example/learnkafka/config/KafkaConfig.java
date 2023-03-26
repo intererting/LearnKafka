@@ -131,8 +131,8 @@ public class KafkaConfig {
 //            return retries.value()[0] > 2 ? new TopicPartition(rec.topic() + ".DLT", rec.partition()) : new TopicPartition(rec.topic(), rec.partition());
 //        }), new FixedBackOff(1000L, 0)));
 
-        factory.setCommonErrorHandler(new DefaultErrorHandler(new DeadLetterPublishingRecoverer(kafkaTemplate),//
-                                                              new FixedBackOff(1000L, 2)));
+//        factory.setCommonErrorHandler(new DefaultErrorHandler(new DeadLetterPublishingRecoverer(kafkaTemplate),//
+//                                                              new FixedBackOff(1000L, 2)));
         //设置提交ackMode
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.BATCH);
         return factory;
@@ -167,7 +167,7 @@ public class KafkaConfig {
         Map<String, Object> props = new HashMap<>();
         //自定义Partition选择器
         props.put(ProducerConfig.PARTITIONER_CLASS_CONFIG, "com.example.learnkafka.config.MyPartitioner");
-        props.put(ProducerConfig.CLIENT_ID_CONFIG, "producer-yu");
+//        props.put(ProducerConfig.CLIENT_ID_CONFIG, "producer-yu");
         //注入bean,可以在拦截器使用
         props.put("some.bean", someBean);
         //拦截器
@@ -178,12 +178,11 @@ public class KafkaConfig {
         return props;
     }
 
-    @Bean
     public Map<String, Object> consumerConfigs(SomeBean someBean) {
         Map<String, Object> props = new HashMap<>();
-        props.put(ConsumerConfig.CLIENT_ID_CONFIG, "consumer-yu");
+//        props.put(ConsumerConfig.CLIENT_ID_CONFIG, "consumer-yu");
         //每次拉取消息数
-        props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 100);
+        props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 5);
         props.put("some.bean", someBean);
         props.put(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG, MyConsumerInterceptor.class.getName());
         //关闭自动提交offset
@@ -198,7 +197,7 @@ public class KafkaConfig {
     @Bean
     public Map<String, Object> routeConsumerConfigs() {
         Map<String, Object> props = new HashMap<>();
-        props.put(ConsumerConfig.CLIENT_ID_CONFIG, "consumer-yu");
+//        props.put(ConsumerConfig.CLIENT_ID_CONFIG, "consumer-yu");
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class);
