@@ -25,11 +25,15 @@ import org.springframework.kafka.config.KafkaListenerContainerFactory;
 import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.*;
 import org.springframework.kafka.listener.*;
+import org.springframework.kafka.retrytopic.RetryTopicConfiguration;
+import org.springframework.kafka.retrytopic.RetryTopicConfigurationBuilder;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.springframework.kafka.transaction.KafkaAwareTransactionManager;
 import org.springframework.kafka.transaction.KafkaTransactionManager;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.util.backoff.FixedBackOff;
 
 import java.util.HashMap;
@@ -60,6 +64,18 @@ public class KafkaConfig {
                                                 .config(TopicConfig.MESSAGE_TIMESTAMP_TYPE_CONFIG, TimestampType.LOG_APPEND_TIME.name)
                                                 .build());
     }
+
+    //    @Bean
+    //    TaskScheduler scheduler() {
+    //        return new ThreadPoolTaskScheduler();
+    //    }
+
+//    @Bean
+//    RetryTopicConfiguration retryConfig(KafkaTemplate<Object, Object> kafkaTemplate) {
+//        //这个地方不能设置batchListener=true
+//        return RetryTopicConfigurationBuilder.newInstance().listenerFactory("mKafkaListenerContainerFactory")
+//                .maxAttempts(3).excludeTopic("topic_demo").create(kafkaTemplate);
+//    }
 
     @Bean
     public ProducerFactory<Object, Object> producerFactory(SomeBean someBean) {
@@ -114,25 +130,24 @@ public class KafkaConfig {
     }
 
     @Bean(name = "mKafkaListenerContainerFactory")
-    public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, Object>> kafkaListenerContainerFactory(ConsumerFactory<String, Object> consumerFactory,
-                                                                                                                           KafkaTemplate<Object, Object> kafkaTemplate) {
+    public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, Object>> kafkaListenerContainerFactory(ConsumerFactory<String, Object> consumerFactory, KafkaTemplate<Object, Object> kafkaTemplate) {
         ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory);
         //这个为true,那么consumer的消息就不会一个一个的回调,可以用一个List来接收Message
         factory.setBatchListener(true);
-//        factory.setCommonErrorHandler(new DefaultErrorHandler(new DeadLetterPublishingRecoverer(kafkaTemplate, (rec, ex) -> {
-//            Header retries = rec.headers().lastHeader("retries");
-//            if (retries == null) {
-//                retries = new RecordHeader("retries", new byte[]{1});
-//                rec.headers().add(retries);
-//            } else {
-//                retries.value()[0]++;
-//            }
-//            return retries.value()[0] > 2 ? new TopicPartition(rec.topic() + ".DLT", rec.partition()) : new TopicPartition(rec.topic(), rec.partition());
-//        }), new FixedBackOff(1000L, 0)));
+        //        factory.setCommonErrorHandler(new DefaultErrorHandler(new DeadLetterPublishingRecoverer(kafkaTemplate, (rec, ex) -> {
+        //            Header retries = rec.headers().lastHeader("retries");
+        //            if (retries == null) {
+        //                retries = new RecordHeader("retries", new byte[]{1});
+        //                rec.headers().add(retries);
+        //            } else {
+        //                retries.value()[0]++;
+        //            }
+        //            return retries.value()[0] > 2 ? new TopicPartition(rec.topic() + ".DLT", rec.partition()) : new TopicPartition(rec.topic(), rec.partition());
+        //        }), new FixedBackOff(1000L, 0)));
 
-//        factory.setCommonErrorHandler(new DefaultErrorHandler(new DeadLetterPublishingRecoverer(kafkaTemplate),//
-//                                                              new FixedBackOff(1000L, 2)));
+        factory.setCommonErrorHandler(new DefaultErrorHandler(new DeadLetterPublishingRecoverer(kafkaTemplate),//
+                                                              new FixedBackOff(1000L, 2)));
         //设置提交ackMode
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.BATCH);
         return factory;
@@ -140,6 +155,7 @@ public class KafkaConfig {
 
     /**
      * Validation验证失败回调
+     * 返回值在使用sendTo有效
      */
     @Bean
     public KafkaListenerErrorHandler validationErrorHandler() {
@@ -149,11 +165,11 @@ public class KafkaConfig {
         };
     }
 
-    //    @Bean
-    //    public DefaultAfterRollbackProcessor errorHandler(BiConsumer<ConsumerRecord<?, ?>, Exception> recoverer) {
-    //        DefaultAfterRollbackProcessor processor = new DefaultAfterRollbackProcessor(recoverer);
-    //        return processor;
-    //    }
+    //        @Bean
+    //        public DefaultAfterRollbackProcessor errorHandler(BiConsumer<ConsumerRecord<?, ?>, Exception> recoverer) {
+    //            DefaultAfterRollbackProcessor processor = new DefaultAfterRollbackProcessor(recoverer);
+    //            return processor;
+    //        }
 
     @Bean(name = "routeKafkaListenerContainerFactory")
     public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, Object>> routeKafkaListenerContainerFactory() {
@@ -167,7 +183,7 @@ public class KafkaConfig {
         Map<String, Object> props = new HashMap<>();
         //自定义Partition选择器
         props.put(ProducerConfig.PARTITIONER_CLASS_CONFIG, "com.example.learnkafka.config.MyPartitioner");
-//        props.put(ProducerConfig.CLIENT_ID_CONFIG, "producer-yu");
+        //        props.put(ProducerConfig.CLIENT_ID_CONFIG, "producer-yu");
         //注入bean,可以在拦截器使用
         props.put("some.bean", someBean);
         //拦截器
@@ -180,7 +196,7 @@ public class KafkaConfig {
 
     public Map<String, Object> consumerConfigs(SomeBean someBean) {
         Map<String, Object> props = new HashMap<>();
-//        props.put(ConsumerConfig.CLIENT_ID_CONFIG, "consumer-yu");
+        //        props.put(ConsumerConfig.CLIENT_ID_CONFIG, "consumer-yu");
         //每次拉取消息数
         props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 5);
         props.put("some.bean", someBean);
@@ -197,7 +213,7 @@ public class KafkaConfig {
     @Bean
     public Map<String, Object> routeConsumerConfigs() {
         Map<String, Object> props = new HashMap<>();
-//        props.put(ConsumerConfig.CLIENT_ID_CONFIG, "consumer-yu");
+        //        props.put(ConsumerConfig.CLIENT_ID_CONFIG, "consumer-yu");
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class);

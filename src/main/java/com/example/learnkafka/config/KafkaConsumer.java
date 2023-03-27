@@ -41,29 +41,29 @@ public class KafkaConsumer {
     //        }
     //        System.out.println("receive " + Thread.currentThread());
     //    }
-    @KafkaListener(topics = {"topic_demo"}, groupId = "topic_demo_group", concurrency = "2",//
-            id = "my_id_1", properties = {"auto.offset.reset=latest"}, containerFactory = "mKafkaListenerContainerFactory", errorHandler = "validationErrorHandler")
-    //    @Transactional("ktm")
-    public void topicDemokafkaListenerA(@Payload @Valid List<MessaegModel> messaegModel) {
-        System.out.println("receive " + Thread.currentThread() + "  " + messaegModel.size() + " " + messaegModel);
-    }
 
-    @KafkaListener(topics = {"topic_demo"}, groupId = "topic_demo_group", concurrency = "2",//
-            id = "my_id_2", properties = {"auto.offset.reset=latest"}, containerFactory = "mKafkaListenerContainerFactory", errorHandler = "validationErrorHandler")
-    //    @Transactional("ktm")
-    public void topicDemokafkaListenerB(@Payload @Valid List<MessaegModel> messaegModel) {
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        System.out.println("receive " + Thread.currentThread() + "  " + messaegModel.size() + " " + messaegModel);
-    }
+    //    @KafkaListener(topics = {"topic_demo"}, groupId = "topic_demo_group", concurrency = "2",//
+    //            id = "my_id_1", properties = {"auto.offset.reset=latest"}, containerFactory = "mKafkaListenerContainerFactory", errorHandler = "validationErrorHandler")
+    //    //    @Transactional("ktm")
+    //    public void topicDemokafkaListenerA(@Payload @Valid List<MessaegModel> messaegModel) {
+    //        System.out.println("receive " + Thread.currentThread() + "  " + messaegModel.size() + " " + messaegModel);
+    //    }
 
-   /* @KafkaListener(topics = {"topic_demo"}, groupId = "topic_demo_group", concurrency = "2",//
+    //    @KafkaListener(topics = {"topic_demo"}, groupId = "topic_demo_group", concurrency = "2",//
+    //            id = "my_id_2", properties = {"auto.offset.reset=latest"}, containerFactory = "mKafkaListenerContainerFactory", errorHandler = "validationErrorHandler")
+    //    //    @Transactional("ktm")
+    //    public void topicDemokafkaListenerB(@Payload @Valid List<MessaegModel> messaegModel) {
+    //        try {
+    //            Thread.sleep(1000);
+    //        } catch (InterruptedException e) {
+    //            throw new RuntimeException(e);
+    //        }
+    //        System.out.println("receive " + Thread.currentThread() + "  " + messaegModel.size() + " " + messaegModel);
+    //    }
+    @KafkaListener(topics = {"topic_demo"}, groupId = "topic_demo_group", concurrency = "2",//
             id = "my_id_3", properties = {"auto.offset.reset=latest"}, containerFactory = "mKafkaListenerContainerFactory")
     //    @Transactional("ktm")
-//    @RetryableTopic
+    //    @RetryableTopic(kafkaTemplate = "kafkaTemplate")
     public void topicDemokafkaListenerC(List<JsonMessage> messaegModel, @Header(KafkaHeaders.CONVERSION_FAILURES) List<ConversionException> exceptions) {
         //        System.out.println("exceptions " + exceptions.size());
         //        System.out.println("receive " + Thread.currentThread() + "  " + messaegModel.size() + " " + messaegModel);
@@ -73,10 +73,10 @@ public class KafkaConsumer {
     @KafkaListener(topics = {"topic_demo.DLT"}, groupId = "topic_demo_group_dlt", concurrency = "1",//
             id = "my_id_4", properties = {"auto.offset.reset=latest"}, containerFactory = "mKafkaListenerContainerFactory", errorHandler = "validationErrorHandler")
     //    @Transactional("ktm")
-    public void topicDemokafkaListenerC(List<JsonMessage> messaegModel) {
+    public void topicDemokafkaListenerD(List<JsonMessage> messaegModel) {
         System.out.println("DLT " + messaegModel);
         System.out.println("receive " + Thread.currentThread() + " " + messaegModel);
-    }*/
+    }
 
     @EventListener(condition = "event.listenerId.startsWith('my_')")
     public void eventHandler(ListenerContainerIdleEvent event) {
